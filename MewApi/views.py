@@ -198,26 +198,31 @@ def api_check(request):
                                 valid_codes = MewCode.objects.filter(bind_device=device_m, used_at__gt=datetime.datetime.fromtimestamp(time.time() - 2592000))
                                 if len(valid_codes) != 0:
                                     code_n = valid_codes[0]
-                                    sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
-                                    identify = json.dumps({
-                                        "code": code_n.code_value,
-                                        "unique_id": device_m.unique_id,
-                                        "deadline": sec_used_at + 2592000,
-                                    })
-                                    result.update({
-                                        "result": "succeed",
-                                        "status": 202,
-                                        "code": code_n.code_value,
-                                        "unique_id": device_m.unique_id,
-                                        "used_at": int(time.mktime(code_n.used_at.timetuple())),
-                                        "message": "`Code`.`code_value` '%s' is already binded "
-                                                   "to the `Device`.`unique_id` '%s'." % (code_n.code_value, unique_id),
-                                        "deadline": sec_used_at + 2592000,
-                                        "identify": identify
-                                    })  # already binded
-                                    priv_key = rsa.importkey(certificate.private_key)
-                                    sign_content = b64encode(rsa.sign(identify, priv_key, "SHA-1"))
-                                    result.update({"signature": sign_content})
+                                    if code_n.enabled:
+                                        sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
+                                        identify = json.dumps({
+                                            "code": code_n.code_value,
+                                            "unique_id": device_m.unique_id,
+                                            "deadline": sec_used_at + 2592000,
+                                        })
+                                        result.update({
+                                            "result": "succeed",
+                                            "status": 202,
+                                            "code": code_n.code_value,
+                                            "unique_id": device_m.unique_id,
+                                            "used_at": int(time.mktime(code_n.used_at.timetuple())),
+                                            "message": "`Code`.`code_value` '%s' is already binded "
+                                                       "to the `Device`.`unique_id` '%s'." % (code_n.code_value, unique_id),
+                                            "deadline": sec_used_at + 2592000,
+                                            "identify": identify
+                                        })  # already binded
+                                        priv_key = rsa.importkey(certificate.private_key)
+                                        sign_content = b64encode(rsa.sign(identify, priv_key, "SHA-1"))
+                                        result.update({"signature": sign_content})
+                                    else:
+                                        result.update(
+                                            {"result": "error", "status": 403, "message": "`Code`.`code_value` '%s' "
+                                                                                          "is not available now." % code})
                                 else:
                                     result.update({"result": "error", "status": 405,
                                                    "message": "No matching valid `Code` for `Device`.`unique_id` '%s'." % unique_id})
