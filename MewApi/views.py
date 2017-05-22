@@ -222,7 +222,7 @@ def api_check(request):
                                     else:
                                         result.update(
                                             {"result": "error", "status": 403, "message": "`Code`.`code_value` '%s' "
-                                                                                          "is not available now." % code})
+                                                                                          "is not available now." % code_n.code_value})
                                 else:
                                     result.update({"result": "error", "status": 405,
                                                    "message": "No matching valid `Code` for `Device`.`unique_id` '%s'." % unique_id})
