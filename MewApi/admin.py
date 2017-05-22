@@ -28,6 +28,9 @@ class MewCodeAdmin(admin.ModelAdmin):
     search_fields = ["code_value", "bind_device"]
     list_filter = ["enabled", "bucket"]
     readonly_fields = ["used_at", "bind_device"]
+    
+    def has_add_permission(self, request):
+        return False
 
 
 class MewCodeBucketAdmin(admin.ModelAdmin):

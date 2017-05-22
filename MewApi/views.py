@@ -7,6 +7,8 @@ import json
 import re
 import time
 import hashlib
+import rsa
+from base64 import b64encode, b64decode
 
 from django.http import HttpResponse
 
@@ -22,15 +24,14 @@ def api_bind(request):
         post = request.POST
         required_check = True
         missing_field = ""
-        required_field_list = ["code", "unique_id", "version", "checksum"]
+        required_field_list = ["code", "unique_id", "version", "checksum", "ts"]
         for required_field in required_field_list:
             if required_field not in post:
                 required_check = False
                 missing_field = required_field
         if required_check:
             certificate = MewCertificate.objects.latest("checksum_salt")
-            checksum_output = hashlib.sha1("version=%s&unique_id=%s&code=%s&timestamp=%s%s" % (
-            post["version"], post["unique_id"], post["code"], post["timestamp"], certificate.checksum_salt)).hexdigest()
+            checksum_output = hashlib.sha1("version=%s&unique_id=%s&code=%s&ts=%s%s" % (post["version"], post["unique_id"], post["code"], post["ts"], certificate.checksum_salt)).hexdigest()
             if checksum_output == post["checksum"]:
                 timestamp = post["ts"]
                 if abs(int(timestamp) - time.time()) < 3600:
@@ -61,6 +62,11 @@ def api_bind(request):
                                             code_n.used_at = datetime.datetime.now()
                                             code_n.save()
                                             sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
+                                            identify = json.dumps({
+                                                "code": code_n.code_value,
+                                                "unique_id": new_device.unique_id,
+                                                "deadline": sec_used_at + 2592000,
+                                            })
                                             result.update({
                                                 "result": "succeed",
                                                 "status": 200,
@@ -69,8 +75,12 @@ def api_bind(request):
                                                 "used_at": sec_used_at,
                                                 "message": "`Code`.`code_value` %s has been successfully "
                                                            "binded to the new `Device`.`unique_id` %s." % (code, unique_id),
-                                                "deadline": sec_used_at + 2592000
+                                                "deadline": sec_used_at + 2592000,
+                                                "identify": identify
                                             })  # bind new
+                                            priv_key = rsa.importkey(certificate.private_key)
+                                            sign_content = b64encode(rsa.sign(identify, priv_key, "SHA-1"))
+                                            result.update({"signature": sign_content})
                                         else:
                                             old_device_n = old_device_m[0]
                                             if old_device_n.enabled:
@@ -78,6 +88,11 @@ def api_bind(request):
                                                 code_n.used_at = datetime.datetime.now()
                                                 code_n.save()
                                                 sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
+                                                identify = json.dumps({
+                                                    "code": code_n.code_value,
+                                                    "unique_id": old_device_n.unique_id,
+                                                    "deadline": sec_used_at + 2592000,
+                                                })
                                                 result.update({
                                                     "result": "succeed",
                                                     "status": 201,
@@ -86,8 +101,12 @@ def api_bind(request):
                                                     "used_at": int(time.mktime(code_n.used_at.timetuple())),
                                                     "message": "`Code`.`code_value` '%s' has been successfully "
                                                                "binded to an old `Device`.`unique_id` '%s'." % (code, unique_id),
-                                                    "deadline": sec_used_at + 2592000
+                                                    "deadline": sec_used_at + 2592000,
+                                                    "identify": identify
                                                 })  # change code
+                                                priv_key = rsa.importkey(certificate.private_key)
+                                                sign_content = b64encode(rsa.sign(identify, priv_key, "SHA-1"))
+                                                result.update({"signature": sign_content})
                                             else:
                                                 result.update({"result": "error", "status": 403,
                                                                "message": "`Code`.`code_value` '%s' cannot "
@@ -96,6 +115,11 @@ def api_bind(request):
                                         if code_n.bind_device.unique_id == unique_id:
                                             if code_n.bind_device.enabled is True:
                                                 sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
+                                                identify = json.dumps({
+                                                    "code": code_n.code_value,
+                                                    "unique_id": code_n.bind_device.unique_id,
+                                                    "deadline": sec_used_at + 2592000,
+                                                })
                                                 result.update({
                                                     "result": "succeed",
                                                     "status": 202,
@@ -104,8 +128,12 @@ def api_bind(request):
                                                     "used_at": int(time.mktime(code_n.used_at.timetuple())),
                                                     "message": "`Code`.`code_value` '%s' is already binded "
                                                                "to the `Device`.`unique_id` '%s'." % (code, unique_id),
-                                                    "deadline": sec_used_at + 2592000
+                                                    "deadline": sec_used_at + 2592000,
+                                                    "identify": identify
                                                 })  # already binded
+                                                priv_key = rsa.importkey(certificate.private_key)
+                                                sign_content = b64encode(rsa.sign(identify, priv_key, "SHA-1"))
+                                                result.update({"signature": sign_content})
                                             else:
                                                 result.update({"result": "error", "status": 403,
                                                                "message": "`Code`.`code_value` '%s' cannot "
@@ -171,6 +199,11 @@ def api_check(request):
                                 if len(valid_codes) != 0:
                                     code_n = valid_codes[0]
                                     sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
+                                    identify = json.dumps({
+                                        "code": code_n.code_value,
+                                        "unique_id": device_m.unique_id,
+                                        "deadline": sec_used_at + 2592000,
+                                    })
                                     result.update({
                                         "result": "succeed",
                                         "status": 202,
@@ -179,8 +212,12 @@ def api_check(request):
                                         "used_at": int(time.mktime(code_n.used_at.timetuple())),
                                         "message": "`Code`.`code_value` '%s' is already binded "
                                                    "to the `Device`.`unique_id` '%s'." % (code_n.code_value, unique_id),
-                                        "deadline": sec_used_at + 2592000
+                                        "deadline": sec_used_at + 2592000,
+                                        "identify": identify
                                     })  # already binded
+                                    priv_key = rsa.importkey(certificate.private_key)
+                                    sign_content = b64encode(rsa.sign(identify, priv_key, "SHA-1"))
+                                    result.update({"signature": sign_content})
                                 else:
                                     result.update({"result": "error", "status": 405,
                                                    "message": "No matching valid `Code` for `Device`.`unique_id` '%s'." % unique_id})
