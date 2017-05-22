@@ -179,3 +179,8 @@ class MewCertificate(models.Model):
         verbose_name="Public Key",
         blank=False
     )
+    
+    checksum_salt = models.TextField(
+        verbose_name="Checksum Salt",
+        blank=False
+    )

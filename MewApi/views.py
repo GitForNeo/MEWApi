@@ -6,6 +6,7 @@ import datetime
 import json
 import re
 import time
+import hashlib
 
 from django.http import HttpResponse
 
@@ -130,54 +131,59 @@ def api_bind(request):
 def api_check(request):
     result = {}
     if request.method == "POST":
+        checksum_salt = MewCertificate.objects.latest("checksum_salt")
         post = request.POST
-        required_check = True
-        missing_field = ""
-        required_field_list = ["unique_id", "version"]
-        for required_field in required_field_list:
-            if required_field not in post:
-                required_check = False
-                missing_field = required_field
-        if required_check:
-            version = post["version"]
-            version_m = MewVersion.objects.filter(version_string=version)
-            if len(version_m) != 0:
-                unique_id = post["unique_id"]
-                regex_unique_id = re.compile("^[0-9A-Fa-f]{40}$")
-                field_dismatch = ""
-                if not regex_unique_id.match(unique_id):
-                    field_dismatch = "unique_id"
-                if regex_unique_id.match(unique_id):
-                    device = MewDevice.objects.filter(unique_id=unique_id)
-                    if len(device) != 0:
-                        device_m = device[0]
-                        valid_codes = MewCode.objects.filter(bind_device=device_m, used_at__gt=datetime.datetime.fromtimestamp(time.time() - 2592000))
-                        if len(valid_codes) != 0:
-                            code_n = valid_codes[0]
-                            sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
-                            result.update({
-                                "result": "succeed",
-                                "status": 202,
-                                "code": code_n.code_value,
-                                "unique_id": device_m.unique_id,
-                                "used_at": int(time.mktime(code_n.used_at.timetuple())),
-                                "message": "`Code`.`code_value` '%s' is already binded "
-                                           "to the `Device`.`unique_id` '%s'." % (code_n.code_value, unique_id),
-                                "deadline": sec_used_at + 2592000
-                            })  # already binded
+        checksum_output = hashlib.sha1("version=%s&unique_id=%s%s" % (post["version"], post["unique_id"], checksum_salt))
+        if checksum_output == post["checksum"]:
+            required_check = True
+            missing_field = ""
+            required_field_list = ["unique_id", "version"]
+            for required_field in required_field_list:
+                if required_field not in post:
+                    required_check = False
+                    missing_field = required_field
+            if required_check:
+                version = post["version"]
+                version_m = MewVersion.objects.filter(version_string=version)
+                if len(version_m) != 0:
+                    unique_id = post["unique_id"]
+                    regex_unique_id = re.compile("^[0-9A-Fa-f]{40}$")
+                    field_dismatch = ""
+                    if not regex_unique_id.match(unique_id):
+                        field_dismatch = "unique_id"
+                    if regex_unique_id.match(unique_id):
+                        device = MewDevice.objects.filter(unique_id=unique_id)
+                        if len(device) != 0:
+                            device_m = device[0]
+                            valid_codes = MewCode.objects.filter(bind_device=device_m, used_at__gt=datetime.datetime.fromtimestamp(time.time() - 2592000))
+                            if len(valid_codes) != 0:
+                                code_n = valid_codes[0]
+                                sec_used_at = int(time.mktime(code_n.used_at.timetuple()))
+                                result.update({
+                                    "result": "succeed",
+                                    "status": 202,
+                                    "code": code_n.code_value,
+                                    "unique_id": device_m.unique_id,
+                                    "used_at": int(time.mktime(code_n.used_at.timetuple())),
+                                    "message": "`Code`.`code_value` '%s' is already binded "
+                                               "to the `Device`.`unique_id` '%s'." % (code_n.code_value, unique_id),
+                                    "deadline": sec_used_at + 2592000
+                                })  # already binded
+                            else:
+                                result.update({"result": "error", "status": 405,
+                                               "message": "No matching valid `Code` for `Device`.`unique_id` '%s'." % unique_id})
                         else:
-                            result.update({"result": "error", "status": 405,
-                                           "message": "No matching valid `Code` for `Device`.`unique_id` '%s'." % unique_id})
+                            result.update({"result": "error", "status": 404,
+                                           "message": "Cannot find `Device`.`unique_id` equals '%s'." % unique_id})
                     else:
-                        result.update({"result": "error", "status": 404,
-                                       "message": "Cannot find `Device`.`unique_id` equals '%s'." % unique_id})
+                        result.update({"result": "error", "status": 400, "message": "Field `%s` is invalid." % field_dismatch})
                 else:
-                    result.update({"result": "error", "status": 400, "message": "Field `%s` is invalid." % field_dismatch})
+                    result.update({"result": "error", "status": 400,
+                                   "message": "Cannod find `Version`.`version_string` equals '%s'." % version})
             else:
-                result.update({"result": "error", "status": 400,
-                               "message": "Cannod find `Version`.`version_string` equals '%s'." % version})
+                result.update({"result": "error", "status": 400, "message": "Field `%s` is missing." % missing_field})
         else:
-            result.update({"result": "error", "status": 400, "message": "Field `%s` is missing." % missing_field})
+            result.update({"result": "error", "status": 400, "message": "Invalid value of `checksum`."})
     else:
         result.update({"result": "error", "message": "Method %s is not allowed." % request.method})
     result.update({"timestamp": int(time.time())})
