@@ -10,8 +10,8 @@ from django.contrib.auth.models import User
 
 class MewVersion(models.Model):
     class Meta(object):
-        verbose_name = "Version"
-        verbose_name_plural = "Versions"
+        verbose_name = "版本"
+        verbose_name_plural = "版本"
 
     id = models.AutoField(
         primary_key=True,
@@ -19,18 +19,18 @@ class MewVersion(models.Model):
     )
 
     created_at = models.DateTimeField(
-        verbose_name="Created At",
+        verbose_name="创建时间",
         auto_now_add=True
     )  # OK
     
     version_string = models.CharField(
-        verbose_name="Version String",
+        verbose_name="版本号",
         max_length=16,
         default=""
     )
     
     enabled = models.BooleanField(
-        verbose_name="Enabled",
+        verbose_name="启用",
         default=True
     )
 
@@ -40,8 +40,8 @@ class MewVersion(models.Model):
 
 class MewDevice(models.Model):
     class Meta(object):
-        verbose_name = "Device"
-        verbose_name_plural = "Devices"
+        verbose_name = "设备"
+        verbose_name_plural = "设备"
 
     id = models.AutoField(
         primary_key=True,
@@ -49,26 +49,27 @@ class MewDevice(models.Model):
     )
 
     created_at = models.DateTimeField(
-        verbose_name="Created At",
+        verbose_name="创建时间",
         auto_now_add=True
     )  # OK
     
     unique_id = models.CharField(
-        verbose_name="Unique ID",
+        verbose_name="设备号",
         max_length=40,
         default="",
         unique=True,
     )  # OK
     
     enabled = models.BooleanField(
-        verbose_name="Enabled",
+        verbose_name="启用",
         default=True
     )
 
     related_user = models.ForeignKey(
         User,
         null=True,
-        blank=True
+        blank=True,
+        verbose_name="所有者"
     )
 
     def __unicode__(self):
@@ -77,8 +78,8 @@ class MewDevice(models.Model):
 
 class MewCodeBucket(models.Model):
     class Meta(object):
-        verbose_name = "Code Bucket"
-        verbose_name_plural = "Code Buckets"
+        verbose_name = "授权池"
+        verbose_name_plural = "授权池"
     
     id = models.AutoField(
         primary_key=True,
@@ -86,32 +87,33 @@ class MewCodeBucket(models.Model):
     )
     
     created_at = models.DateTimeField(
-        verbose_name="Created At",
+        verbose_name="创建时间",
         auto_now_add=True
     )
     
     name = models.CharField(
-        verbose_name="Name",
+        verbose_name="名称",
         max_length=64,
         unique=True,
-        default="Untitled Bucket"
+        default="未命名授权池"
     )
     
     code_count = models.IntegerField(
-        verbose_name="Code Count",
+        verbose_name="数量",
         default=100,
-        help_text="Current rate: 100 points = 1 code"
+        help_text="当前兑换比率: 100 点数 = 1 授权"
     )
     
     code_export = models.TextField(
-        verbose_name="Code Export",
+        verbose_name="导出",
         blank=True
     )
 
     related_user = models.ForeignKey(
         User,
         null=True,
-        blank=True
+        blank=True,
+        verbose_name="所有者"
     )
     
     def __unicode__(self):
@@ -120,8 +122,8 @@ class MewCodeBucket(models.Model):
 
 class MewCode(models.Model):
     class Meta(object):
-        verbose_name = "Code"
-        verbose_name_plural = "Codes"
+        verbose_name = "授权"
+        verbose_name_plural = "授权"
 
     id = models.AutoField(
         primary_key=True,
@@ -129,32 +131,33 @@ class MewCode(models.Model):
     )
 
     created_at = models.DateTimeField(
-        verbose_name="Created At",
+        verbose_name="创建时间",
         auto_now_add=True
     )  # OK
     
     used_at = models.DateTimeField(
-        verbose_name="Used At",
+        verbose_name="使用时间",
         blank=True,
         null=True
     )  # OK
 
     code_value = models.CharField(
-        verbose_name="Code Value",
+        verbose_name="授权码",
         max_length=16,
         default="",
-        unique=True,
+        unique=True
     )  # OK
     
     bind_device = models.ForeignKey(
         MewDevice,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL
+        on_delete=models.SET_NULL,
+        verbose_name="关联设备"
     )
     
     enabled = models.BooleanField(
-        verbose_name="Enabled",
+        verbose_name="启用",
         default=True
     )
     
@@ -162,13 +165,15 @@ class MewCode(models.Model):
         MewCodeBucket,
         editable=False,
         default=None,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        verbose_name="授权池"
     )
 
     related_user = models.ForeignKey(
         User,
         null=True,
-        blank=True
+        blank=True,
+        verbose_name="所有者"
     )
 
     def __unicode__(self):
@@ -177,8 +182,8 @@ class MewCode(models.Model):
 
 class MewCertificate(models.Model):
     class Meta(object):
-        verbose_name = "Certificate"
-        verbose_name_plural = "Certificates"
+        verbose_name = "证书"
+        verbose_name_plural = "证书"
 
     id = models.AutoField(
         primary_key=True,
@@ -186,24 +191,24 @@ class MewCertificate(models.Model):
     )
 
     created_at = models.DateTimeField(
-        verbose_name="Created At",
+        verbose_name="创建时间",
         auto_now_add=True
     )
     
     private_key = models.TextField(
-        verbose_name="Private Key",
+        verbose_name="私钥",
         blank=False,
         default=""
     )
     
     public_key = models.TextField(
-        verbose_name="Public Key",
+        verbose_name="公钥",
         blank=False,
         default=""
     )
     
     checksum_salt = models.TextField(
-        verbose_name="Checksum Salt",
+        verbose_name="盐",
         blank=False,
         default=""
     )
@@ -211,8 +216,8 @@ class MewCertificate(models.Model):
 
 class MewAgentPointRecord(models.Model):
     class Meta(object):
-        verbose_name = "Agent Record"
-        verbose_name_plural = "Agent Records"
+        verbose_name = "代理点数"
+        verbose_name_plural = "代理点数"
     
     id = models.AutoField(
         primary_key=True,
@@ -220,7 +225,7 @@ class MewAgentPointRecord(models.Model):
     )
     
     created_at = models.DateTimeField(
-        verbose_name="Created At",
+        verbose_name="创建时间",
         auto_now_add=True
     )
     
@@ -228,11 +233,13 @@ class MewAgentPointRecord(models.Model):
         User,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL
+        on_delete=models.SET_NULL,
+        verbose_name="所有者"
     )
     
     points = models.IntegerField(
-        default=0
+        default=0,
+        verbose_name="点数"
     )
 
     def __unicode__(self):

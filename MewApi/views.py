@@ -74,8 +74,8 @@ def api_bind(request):
                                                 "code": code_n.code_value,
                                                 "unique_id": new_device.unique_id,
                                                 "used_at": sec_used_at,
-                                                "message": "`Code`.`code_value` %s has been successfully "
-                                                           "binded to the new `Device`.`unique_id` %s." % (code, unique_id),
+                                                "message": "授权码 %s 已成功绑定至 "
+                                                           "设备 %s。" % (code, unique_id),
                                                 "deadline": sec_used_at + 2592000,
                                                 "identify": identify
                                             })  # bind new
@@ -102,8 +102,8 @@ def api_bind(request):
                                                     "code": code_n.code_value,
                                                     "unique_id": old_device_n.unique_id,
                                                     "used_at": int(time.mktime(code_n.used_at.timetuple())),
-                                                    "message": "`Code`.`code_value` '%s' has been successfully "
-                                                               "binded to an old `Device`.`unique_id` '%s'." % (code, unique_id),
+                                                    "message": "授权码 '%s' 已成功绑定至 "
+                                                               "设备 '%s'。" % (code, unique_id),
                                                     "deadline": sec_used_at + 2592000,
                                                     "identify": identify
                                                 })  # change code
@@ -112,8 +112,8 @@ def api_bind(request):
                                                 result.update({"signature": sign_content})
                                             else:
                                                 result.update({"result": "error", "status": 403,
-                                                               "message": "`Code`.`code_value` '%s' cannot "
-                                                                          "be binded to this device." % code})
+                                                               "message": "授权码 '%s' 无法 "
+                                                                          "绑定至该设备，可能是该设备已被禁用。" % code})
                                     else:
                                         if code_n.bind_device.unique_id == unique_id:
                                             if code_n.bind_device.enabled is True:
@@ -129,8 +129,8 @@ def api_bind(request):
                                                     "code": code_n.code_value,
                                                     "unique_id": code_n.bind_device.unique_id,
                                                     "used_at": int(time.mktime(code_n.used_at.timetuple())),
-                                                    "message": "`Code`.`code_value` '%s' is already binded "
-                                                               "to the `Device`.`unique_id` '%s'." % (code, unique_id),
+                                                    "message": "授权码 '%s' 已成功绑定至 "
+                                                               "设备 '%s'。" % (code, unique_id),
                                                     "deadline": sec_used_at + 2592000,
                                                     "identify": identify
                                                 })  # already binded
@@ -139,24 +139,24 @@ def api_bind(request):
                                                 result.update({"signature": sign_content})
                                             else:
                                                 result.update({"result": "error", "status": 403,
-                                                               "message": "`Code`.`code_value` '%s' cannot "
-                                                                          "be binded to this device." % code})
+                                                               "message": "授权码 '%s' 无法 "
+                                                                          "绑定至该设备，可能是该设备已被禁用。" % code})
                                         else:
                                             result.update({"result": "error", "status": 403,
-                                                           "message": "`Code`.`code_value` '%s' has "
-                                                                      "been binded by another device." % code})
+                                                           "message": "授权码 '%s' 已经 "
+                                                                      "绑定至其它设备。" % code})
                                 else:
                                     result.update(
-                                        {"result": "error", "status": 403, "message": "`Code`.`code_value` '%s' "
-                                                                                      "is not available now." % code})
+                                        {"result": "error", "status": 403, "message": "授权码 '%s' "
+                                                                                      "目前不可用。" % code})
                             else:
                                 result.update({"result": "error", "status": 404,
-                                               "message": "Cannot find `Code`.`code_value` equals '%s'." % code})
+                                               "message": "找不到有效授权 '%s'。" % code})
                         else:
                             result.update({"result": "error", "status": 400, "message": "Field `%s` is invalid." % field_dismatch})
                     else:
                         result.update({"result": "error", "status": 400,
-                                       "message": "Cannod find `Version`.`version_string` equals '%s'." % version})
+                                       "message": "版本号 '%s' 目前不可用。" % version})
                 else:
                     result.update({"result": "error", "status": 400, "message": "Invalid value of `timestamp`."})
             else:
@@ -214,8 +214,8 @@ def api_check(request):
                                             "code": code_n.code_value,
                                             "unique_id": device_m.unique_id,
                                             "used_at": int(time.mktime(code_n.used_at.timetuple())),
-                                            "message": "`Code`.`code_value` '%s' is already binded "
-                                                       "to the `Device`.`unique_id` '%s'." % (code_n.code_value, unique_id),
+                                            "message": "授权码 '%s' 已成功绑定至 "
+                                                       "设备 '%s'。" % (code_n.code_value, unique_id),
                                             "deadline": sec_used_at + 2592000,
                                             "identify": identify
                                         })  # already binded
@@ -224,19 +224,19 @@ def api_check(request):
                                         result.update({"signature": sign_content})
                                     else:
                                         result.update(
-                                            {"result": "error", "status": 403, "message": "`Code`.`code_value` '%s' "
-                                                                                          "is not available now." % code_n.code_value})
+                                            {"result": "error", "status": 403, "message": "授权码 '%s' "
+                                                                                          "目前不可用。" % code_n.code_value})
                                 else:
                                     result.update({"result": "error", "status": 405,
-                                                   "message": "No matching valid `Code` for `Device`.`unique_id` '%s'." % unique_id})
+                                                   "message": "设备 '%s' 授权已过期，请输入新授权码进行续费。" % unique_id})
                             else:
                                 result.update({"result": "error", "status": 404,
-                                               "message": "Cannot find `Device`.`unique_id` equals '%s'." % unique_id})
+                                               "message": "设备 '%s' 尚未授权，请输入授权码进行首次激活。" % unique_id})
                         else:
                             result.update({"result": "error", "status": 400, "message": "Field `%s` is invalid." % field_dismatch})
                     else:
                         result.update({"result": "error", "status": 400,
-                                       "message": "Cannod find `Version`.`version_string` equals '%s'." % version})
+                                       "message": "版本号 '%s' 目前不可用。" % version})
                 else:
                     result.update({"result": "error", "status": 400, "message": "Invalid value of `timestamp`."})
             else:

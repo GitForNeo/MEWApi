@@ -35,6 +35,7 @@ class MewDeviceAdmin(admin.ModelAdmin):
     list_display = ("unique_id", "enabled", "created_at")
     search_fields = ["unique_id"]
     list_filter = ["enabled"]
+    readonly_fields = ["related_user"]
 
     def get_queryset(self, request):
         qs = super(MewDeviceAdmin, self).get_queryset(request)
@@ -45,17 +46,12 @@ class MewDeviceAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
-    def get_readonly_fields(self, request, obj=None):
-        if request.user.is_superuser:
-            return []
-        else:
-            return ["related_user"]
-
 
 class MewCodeAdmin(admin.ModelAdmin):
     list_display = ("code_value", "bucket", "enabled", "bind_device", "used_at")
     search_fields = ["code_value", "bind_device"]
     list_filter = ["enabled", "bucket"]
+    readonly_fields = ["code_value", "used_at", "bind_device", "related_user"]
 
     def get_queryset(self, request):
         qs = super(MewCodeAdmin, self).get_queryset(request)
@@ -65,12 +61,6 @@ class MewCodeAdmin(admin.ModelAdmin):
     
     def has_add_permission(self, request):
         return False
-    
-    def get_readonly_fields(self, request, obj=None):
-        if request.user.is_superuser:
-            return ["used_at", "bind_device"]
-        else:
-            return ["used_at", "bind_device", "related_user"]
 
 
 class MewCodeBucketForm(forms.ModelForm):
@@ -82,15 +72,14 @@ class MewCodeBucketForm(forms.ModelForm):
         req_user = self.request.user
         record_m = MewAgentPointRecord.objects.filter(related_user=req_user)
         if len(record_m) == 0:
-            raise ValidationError("Cannot access your point record, please contact the administrator.")
+            raise ValidationError("无法访问您的代理点数账户，请联系管理员。")
         record_n = record_m[0]
         remained_points = record_n.points
         code_count_val = self.cleaned_data['code_count']
         code_count = int(code_count_val)
         point_need = code_count * 100
         if remained_points < point_need:
-            raise ValidationError("Your points are not enough. %s points needed, you have %s points." % (point_need,
-                                                                                                         remained_points))
+            raise ValidationError("您的点数不足。此次操作需要 %s 点数，您拥有 %s 点数。" % (point_need, remained_points))
         return code_count_val
 
 
@@ -119,9 +108,7 @@ class MewCodeBucketAdmin(admin.ModelAdmin):
             record_m.points = remained_points
             record_m.save()
             messages.add_message(request, messages.SUCCESS,
-                                 "You spent %d points to generate %d codes, and you have %d points left." % (need_points,
-                                                                                                             obj.code_count,
-                                                                                                             remained_points))
+                                 "您使用 %d 点数生成了 %d 个授权码，点数账户剩余 %d 点数。" % (need_points, obj.code_count, remained_points))
         code_export = ""
         obj.save()
         for i in range(0, obj.code_count):
