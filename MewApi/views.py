@@ -38,7 +38,7 @@ def api_bind(request):
                     version = post["version"]
                     version_m = MewVersion.objects.filter(version_string=version)
                     if len(version_m) != 0:
-                        code = post["code"]
+                        code = post["code"].upper()
                         regex_code = re.compile("^[0-9A-Za-z]{12}$")
                         unique_id = post["unique_id"]
                         regex_unique_id = re.compile("^[0-9A-Fa-f]{40}$")
@@ -57,6 +57,7 @@ def api_bind(request):
                                         if len(old_device_m) == 0:
                                             new_device = MewDevice()
                                             new_device.unique_id = unique_id
+                                            new_device.related_user = code_n.related_user
                                             new_device.save()
                                             code_n.bind_device = new_device
                                             code_n.used_at = datetime.datetime.now()
@@ -84,6 +85,8 @@ def api_bind(request):
                                         else:
                                             old_device_n = old_device_m[0]
                                             if old_device_n.enabled:
+                                                old_device_n.related_user = code_n.related_user
+                                                old_device_n.save()
                                                 code_n.bind_device = old_device_n
                                                 code_n.used_at = datetime.datetime.now()
                                                 code_n.save()

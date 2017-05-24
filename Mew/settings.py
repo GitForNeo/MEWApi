@@ -30,6 +30,7 @@ SECRET_KEY = 'e)@eh2y!$e3wn%b3v^t0woh$#3gf+_q7l2aqpe*nze@^2)+%4y'
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    "mew.wuji-vip.com",
     "api.82flex.com",
     "127.0.0.1",
     "localhost"
@@ -135,3 +136,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [
+
+]
+STATICFILES_FINDERS = (
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder"
+)

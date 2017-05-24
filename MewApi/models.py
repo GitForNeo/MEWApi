@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -64,6 +65,12 @@ class MewDevice(models.Model):
         default=True
     )
 
+    related_user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True
+    )
+
     def __unicode__(self):
         return self.unique_id
 
@@ -93,10 +100,17 @@ class MewCodeBucket(models.Model):
     code_count = models.IntegerField(
         verbose_name="Code Count",
         default=100,
+        help_text="Current rate: 100 points = 1 code"
     )
     
     code_export = models.TextField(
         verbose_name="Code Export",
+        blank=True
+    )
+
+    related_user = models.ForeignKey(
+        User,
+        null=True,
         blank=True
     )
     
@@ -151,6 +165,12 @@ class MewCode(models.Model):
         on_delete=models.CASCADE
     )
 
+    related_user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True
+    )
+
     def __unicode__(self):
         return self.code_value
 
@@ -187,3 +207,33 @@ class MewCertificate(models.Model):
         blank=False,
         default=""
     )
+
+
+class MewAgentPointRecord(models.Model):
+    class Meta(object):
+        verbose_name = "Agent Record"
+        verbose_name_plural = "Agent Records"
+    
+    id = models.AutoField(
+        primary_key=True,
+        editable=False
+    )
+    
+    created_at = models.DateTimeField(
+        verbose_name="Created At",
+        auto_now_add=True
+    )
+    
+    related_user = models.OneToOneField(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+    
+    points = models.IntegerField(
+        default=0
+    )
+
+    def __unicode__(self):
+        return self.related_user.username + "(" + unicode(self.points) + ")"
